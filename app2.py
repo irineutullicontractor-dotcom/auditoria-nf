@@ -40,8 +40,28 @@ if st.button("🚀 Processar Auditoria"):
         # O contrato é lido sem header para processar o bruto linha a linha
         df_bruto_contrato = carregar(file_contrato, header=None)
 
-        # Mapeamento de Colunas
-        NF_NUMERO, NF_CNPJ, NF_FORN, NF_DATA, NF_VALOR = 'Número (nNFSe)', 'Prestador (CNPJ / CPF)', 'Prestador (xNome)', 'Data da Emissão (dhEmi)', 'Valor Serviço (vServ)'
+        # --- MAPEAMENTO INTELIGENTE DE COLUNAS ---
+        # Definimos uma lista de possíveis nomes para o CNPJ nas NFs
+        possiveis_colunas_cnpj = ['Prestador (CNPJ)', 'Prestador (CNPJ / CPF)', 'CNPJ Prestador', 'CNPJ']
+        
+        # Tentamos encontrar qual dessas existe no arquivo enviado
+        NF_CNPJ = None
+        for col in possiveis_colunas_cnpj:
+            if col in df_nf.columns:
+                NF_CNPJ = col
+                break
+        
+        # Se não encontrar nenhuma, avisa o usuário
+        if not NF_CNPJ:
+            st.error(f"❌ Não encontrei a coluna de CNPJ no arquivo de NFs. Colunas lidas: {list(df_nf.columns)}")
+            st.stop()
+
+        # Demais colunas (ajuste aqui se outras também mudarem)
+        NF_NUMERO = 'Número (nNFSe)'
+        NF_FORN = 'Prestador (xNome)'
+        NF_DATA = 'Data da Emissão (dhEmi)'
+        NF_VALOR = 'Valor Serviço (vServ)'
+    
         PED_FORN_PAINEL, PED_NUM_PAINEL, PED_NF_REF = 'Fornecedor', 'N° do Pedido', 'N° da Nota fiscal'
         FORN_COD, FORN_CNPJ, FORN_CRED = 'Cód. Fornecedor', 'CNPJCPF', 'Credor'
 
