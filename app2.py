@@ -40,28 +40,34 @@ if st.button("🚀 Processar Auditoria"):
         # O contrato é lido sem header para processar o bruto linha a linha
         df_bruto_contrato = carregar(file_contrato, header=None)
 
-        # --- MAPEAMENTO INTELIGENTE DE COLUNAS ---
-        # Definimos uma lista de possíveis nomes para o CNPJ nas NFs
-        possiveis_colunas_cnpj = ['Prestador (CNPJ)', 'Prestador (CNPJ / CPF)', 'CNPJ Prestador', 'CNPJ']
+        # --- MAPEAMENTO INTELIGENTE E FLEXÍVEL ---
         
-        # Tentamos encontrar qual dessas existe no arquivo enviado
-        NF_CNPJ = None
-        for col in possiveis_colunas_cnpj:
-            if col in df_nf.columns:
-                NF_CNPJ = col
-                break
-        
-        # Se não encontrar nenhuma, avisa o usuário
-        if not NF_CNPJ:
-            st.error(f"❌ Não encontrei a coluna de CNPJ no arquivo de NFs. Colunas lidas: {list(df_nf.columns)}")
-            st.stop()
+        # 1. Função auxiliar para achar a coluna certa em uma lista de opções
+        def encontrar_coluna(df, opcoes):
+            for opt in opcoes:
+                if opt in df.columns:
+                    return opt
+            return None
 
-        # Demais colunas (ajuste aqui se outras também mudarem)
-        NF_NUMERO = 'Número (nNFSe)'
-        NF_FORN = 'Prestador (xNome)'
-        NF_DATA = 'Data da Emissão (dhEmi)'
-        NF_VALOR = 'Valor Serviço (vServ)'
-    
+        # 2. Definir as opções para cada campo das NFs (baseado no seu erro atual)
+        NF_CNPJ = encontrar_coluna(df_nf, ['CNPJ Prestador (CNPJ)', 'Prestador (CNPJ)', 'Prestador (CNPJ / CPF)', 'CNPJ'])
+        NF_NUMERO = encontrar_coluna(df_nf, ['Número NFS-e (nNFSe)', 'Número (nNFSe)', 'nNFSe'])
+        NF_FORN = encontrar_coluna(df_nf, ['Nome Prestador (xNome)', 'Prestador (xNome)', 'Razão Social Prestador'])
+        NF_DATA = encontrar_coluna(df_nf, ['Data/Hora Emissão DPS (dhEmi)', 'Data da Emissão (dhEmi)', 'dhEmi'])
+        NF_VALOR = encontrar_coluna(df_nf, ['Valor do Serviço (vServ) (vServ)', 'Valor Serviço (vServ)', 'vServ'])
+
+        # 3. Verificação de segurança para o campo crítico (CNPJ)
+        if not NF_CNPJ:
+            st.error(f"❌ Não encontrei a coluna de CNPJ. Colunas lidas: {list(df_nf.columns)}")
+            st.stop()
+        
+        # Se as outras colunas essenciais não forem achadas, usamos o nome que você já tinha como padrão
+        NF_NUMERO = NF_NUMERO or 'Número (nNFSe)'
+        NF_FORN = NF_FORN or 'Prestador (xNome)'
+        NF_DATA = NF_DATA or 'Data da Emissão (dhEmi)'
+        NF_VALOR = NF_VALOR or 'Valor Serviço (vServ)'
+
+        # Mapeamento dos outros arquivos (Painel e Fornecedores permanecem igual)
         PED_FORN_PAINEL, PED_NUM_PAINEL, PED_NF_REF = 'Fornecedor', 'N° do Pedido', 'N° da Nota fiscal'
         FORN_COD, FORN_CNPJ, FORN_CRED = 'Cód. Fornecedor', 'CNPJCPF', 'Credor'
 
